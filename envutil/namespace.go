@@ -1,9 +1,11 @@
 package envutil
 
 import (
+	"net"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Namespace is a binder which is used for binding environment variables.
@@ -128,6 +130,102 @@ BIND:
 			*ptr = def[0]
 		}
 	}
+	return e
+}
+
+// BindBool binds net.IP into ptr with a optional default value.
+func (n *Namespace) BindIP(name string, ptr *net.IP, def ...net.IP) *Env {
+	e := n.new(name)
+	val, ok := os.LookupEnv(e.Name)
+	if ok {
+		e.Value = val
+		goto BIND
+	}
+	if len(def) > 0 {
+		e.Value = def[0].String()
+	}
+
+BIND:
+	v := net.ParseIP(strings.TrimSpace(e.Value))
+	if v == nil {
+		if len(def) > 0 {
+			*ptr = def[0]
+		}
+		return e
+	}
+	*ptr = v
+	return e
+}
+
+// BindIPNet binds net.IPNet into ptr with a optional default value.
+func (n *Namespace) BindIPNet(name string, ptr *net.IPNet, def ...net.IPNet) *Env {
+	e := n.new(name)
+	val, ok := os.LookupEnv(e.Name)
+	if ok {
+		e.Value = val
+		goto BIND
+	}
+	if len(def) > 0 {
+		e.Value = def[0].String()
+	}
+
+BIND:
+	_, v, err := net.ParseCIDR(strings.TrimSpace(e.Value))
+	if err != nil {
+		if len(def) > 0 {
+			*ptr = def[0]
+		}
+		return e
+	}
+	*ptr = *v
+	return e
+}
+
+// BindTime binds time.Time into ptr with a optional default value.
+func (n *Namespace) BindTime(name string, ptr *time.Time, def ...time.Time) *Env {
+	e := n.new(name)
+	val, ok := os.LookupEnv(e.Name)
+	if ok {
+		e.Value = val
+		goto BIND
+	}
+	if len(def) > 0 {
+		e.Value = def[0].String()
+	}
+
+BIND:
+	v, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(e.Value))
+	if err != nil {
+		if len(def) > 0 {
+			*ptr = def[0]
+		}
+		return e
+	}
+	*ptr = v
+	return e
+}
+
+// BindDuration binds time.Duration into ptr with a optional default value.
+func (n *Namespace) BindDuration(name string, ptr *time.Duration, def ...time.Duration) *Env {
+	e := n.new(name)
+	val, ok := os.LookupEnv(e.Name)
+	if ok {
+		e.Value = val
+		goto BIND
+	}
+	if len(def) > 0 {
+		e.Value = def[0].String()
+	}
+
+BIND:
+	v, err := time.ParseDuration(strings.TrimSpace(e.Value))
+	if err != nil {
+		if len(def) > 0 {
+			*ptr = def[0]
+		}
+		return e
+	}
+	*ptr = v
 	return e
 }
 
